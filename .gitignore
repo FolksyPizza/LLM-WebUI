@@ -205,3 +205,12 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+# Application runtime data (contains user accounts, password hashes,
+# encrypted chats, and the chat encryption key — never commit these)
+data/state.json
+data/state.json.tmp
+data/chat.key
+
+# Personal local scratch/session notes
+codex-sessions
