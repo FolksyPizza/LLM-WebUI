@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LLM WebUI</title>
+  <link rel="stylesheet" href="vendor/katex/katex.min.css" />
+  <link rel="stylesheet" href="vendor/highlight/github-dark.min.css" />
+  <link rel="stylesheet" href="demo.css" />
+</head>
+<body>
+  <div class="noise"></div>
+  <div class="aurora"></div>
+
+  <div class="chat-main">
+    <header class="chat-topbar">
+      <div class="chat-title">
+        <div class="brand">
+          <span id="uiBrandDemo">LLM WebUI</span>
+        </div>
+      </div>
+      <div class="chat-actions">
+        <a class="ghost-btn" href="/login">Sign in</a>
+        <a class="primary-btn" href="/login?mode=create">Create account</a>
+      </div>
+    </header>
+
+    <div class="chat-body" id="chatBody">
+      <div id="greeting" class="greeting">
+        <span id="greetingText"></span><span class="cursor">|</span>
+      </div>
+      <div class="messages" id="messages"></div>
+    </div>
+
+    <form id="chatForm" class="chat-input">
+      <textarea id="promptInput" rows="1" placeholder="Ask anything"></textarea>
+      <button id="sendBtn" type="submit" class="primary" aria-label="Send message" disabled>
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M12 19V6"></path>
+          <path d="M6.5 11.5L12 6l5.5 5.5"></path>
+        </svg>
+      </button>
+    </form>
+    <p class="chat-disclaimer">AI can make mistakes. Be sure to check important info.</p>
+  </div>
+
+  <div id="authToast" class="auth-toast hidden"></div>
+
+  <script defer src="vendor/marked/marked.min.js"></script>
+  <script defer src="vendor/dompurify/purify.min.js"></script>
+  <script defer src="vendor/highlight/highlight.min.js"></script>
+  <script defer src="vendor/katex/katex.min.js"></script>
+  <script defer src="vendor/katex/auto-render.min.js"></script>
+  <script defer src="demo.js"></script>
+</body>
+</html>

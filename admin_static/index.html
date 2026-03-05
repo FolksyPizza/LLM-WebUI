@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LLM WebUI Admin</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body class="admin-page">
+  <div class="backdrop-grid"></div>
+  <div class="backdrop-glow"></div>
+
+  <header class="topbar">
+    <div class="brand">
+      <div>
+        <h1 id="adminBrandName">LLM WebUI</h1>
+        <p>Local Model Control Center</p>
+      </div>
+    </div>
+    <div class="actions">
+      <button id="logoutBtn" class="ghost hidden">Log Out</button>
+    </div>
+  </header>
+
+  <main class="shell">
+    <section id="authPanel" class="panel auth">
+      <div class="panel-header">
+        <h2>Operator Sign In</h2>
+        <p>Admin-only access for managing users, models, limits, and runtime servers.</p>
+      </div>
+      <form id="loginForm" class="form">
+        <label>
+          Email
+          <input type="email" id="loginEmail" required autocomplete="email" />
+        </label>
+        <label>
+          Password
+          <div class="password-field">
+            <input type="password" id="loginPassword" required autocomplete="current-password" />
+            <button type="button" class="ghost tiny toggle-password" data-target="loginPassword">Show</button>
+          </div>
+        </label>
+        <button type="submit" class="primary">Access Admin</button>
+        <p class="hint">Only admins can use this panel.</p>
+      </form>
+    </section>
+
+    <section id="adminPanel" class="admin hidden">
+      <div class="hero panel">
+        <div>
+          <h2 id="adminHeroTitle">LLM WebUI Control Center</h2>
+          <p id="adminWelcome">Loading admin profile...</p>
+        </div>
+        <div class="hero-tag">Operator View</div>
+      </div>
+
+      <div class="stat-grid">
+        <article class="panel stat-card">
+          <div class="stat-label">Users</div>
+          <div class="stat-value" id="statUsers">0</div>
+        </article>
+        <article class="panel stat-card">
+          <div class="stat-label">Admins</div>
+          <div class="stat-value" id="statAdmins">0</div>
+        </article>
+        <article class="panel stat-card">
+          <div class="stat-label">Disabled</div>
+          <div class="stat-value" id="statDisabled">0</div>
+        </article>
+        <article class="panel stat-card">
+          <div class="stat-label">Models</div>
+          <div class="stat-value" id="statModels">0</div>
+        </article>
+      </div>
+
+      <div class="layout-grid">
+        <section class="panel section users">
+          <div class="panel-header compact">
+            <h3>Users</h3>
+            <button id="refreshUsers" class="ghost tiny">Refresh</button>
+          </div>
+          <ul id="userList" class="user-list"></ul>
+        </section>
+
+        <section class="panel section create-user">
+          <div class="panel-header compact">
+            <h3>Create User</h3>
+          </div>
+          <form id="createUserForm" class="form">
+            <label>
+              Name
+              <input type="text" id="newName" required />
+            </label>
+            <label>
+              Email
+              <input type="email" id="newEmail" required />
+            </label>
+            <label>
+              Password
+              <div class="password-field">
+                <input type="password" id="newPassword" required />
+                <button type="button" class="ghost tiny toggle-password" data-target="newPassword">Show</button>
+              </div>
+            </label>
+            <label>
+              Rank
+              <select id="newRank">
+                <option value="Free" selected>Free</option>
+                <option value="Plus">Plus</option>
+                <option value="Pro">Pro</option>
+              </select>
+            </label>
+            <button type="submit" class="primary">Create</button>
+          </form>
+        </section>
+
+        <section class="panel section models">
+          <div class="panel-header compact">
+            <h3>Models</h3>
+            <button id="refreshModels" class="ghost tiny">Refresh</button>
+          </div>
+          <ul id="modelList" class="model-list"></ul>
+          <p class="hint">Active model becomes default for users (they can override per message).</p>
+        </section>
+
+        <section class="panel section editor">
+          <div class="panel-header compact">
+            <h3>Model Editor</h3>
+            <span class="tag" id="modelFormStatus">Create new</span>
+          </div>
+          <form id="modelForm" class="form">
+            <label>
+              Internal Name (optional)
+              <input type="text" id="modelName" placeholder="e.g. matrix-alpha" />
+            </label>
+            <label>
+              Main Model Name (shown to users)
+              <input type="text" id="displayNamePrefix" placeholder="e.g. ChatGPT" />
+            </label>
+            <label>
+              Model Variant (shown after name)
+              <input type="text" id="displayNameSuffix" placeholder="e.g. 5.2 Thinking" />
+            </label>
+            <label>
+              Provider
+              <select id="modelProvider">
+                <option value="local">Local .pt</option>
+                <option value="ollama">Ollama Server</option>
+                <option value="openai">OpenAI/vLLM (v1)</option>
+                <option value="anthropic">Anthropic</option>
+                <option value="google">Google (Gemini API)</option>
+              </select>
+            </label>
+            <label>
+              Model Category
+              <select id="modelType">
+                <option value="normal" selected>Normal</option>
+                <option value="legacy">Legacy</option>
+              </select>
+            </label>
+            <label>
+              Model Path (.pt)
+              <input type="text" id="modelPath" placeholder="/path/to/model.pt" />
+            </label>
+            <label>
+              Ollama Model Name
+              <input type="text" id="ollamaModel" placeholder="e.g. llama3" />
+            </label>
+            <label id="openaiBaseUrlGroup" class="hidden">
+              OpenAI-Compatible Base URL
+              <input type="text" id="openaiBaseUrl" placeholder="http://host:8000/v1" />
+            </label>
+            <label id="openaiApiKeyGroup" class="hidden">
+              Model API Key Override (optional)
+              <input type="password" id="openaiApiKey" placeholder="Leave blank to use API Keys area default" />
+            </label>
+            <label id="openaiModelGroup" class="hidden">
+              OpenAI-Compatible Model Name
+              <input type="text" id="openaiModelName" placeholder="e.g. meta-llama/Llama-3.1-8B-Instruct" />
+            </label>
+            <label id="anthropicBaseUrlGroup" class="hidden">
+              Anthropic Base URL
+              <input type="text" id="anthropicBaseUrl" placeholder="https://api.anthropic.com/v1" />
+            </label>
+            <label id="anthropicApiKeyGroup" class="hidden">
+              Model API Key Override (optional)
+              <input type="password" id="anthropicApiKey" placeholder="Leave blank to use API Keys area default" />
+            </label>
+            <label id="anthropicModelGroup" class="hidden">
+              Anthropic Model Name
+              <input type="text" id="anthropicModelName" placeholder="e.g. claude-3-5-sonnet-latest" />
+            </label>
+            <label id="googleBaseUrlGroup" class="hidden">
+              Google Base URL
+              <input type="text" id="googleBaseUrl" placeholder="https://generativelanguage.googleapis.com/v1beta" />
+            </label>
+            <label id="googleApiKeyGroup" class="hidden">
+              Model API Key Override (optional)
+              <input type="password" id="googleApiKey" placeholder="Leave blank to use API Keys area default" />
+            </label>
+            <label id="googleModelGroup" class="hidden">
+              Google Model Name
+              <input type="text" id="googleModelName" placeholder="e.g. gemini-1.5-pro" />
+            </label>
+            <label id="ollamaServerGroup" class="hidden">
+              Ollama Server
+              <select id="modelServerSelect"></select>
+            </label>
+            <div id="providerModelLookup" class="form hidden">
+              <div class="form-actions">
+                <button type="button" class="ghost tiny" id="fetchProviderModels">Fetch Provider Models</button>
+              </div>
+              <label>
+                Available Provider Models
+                <select id="providerModelSelect"></select>
+              </label>
+              <p class="hint">Select a model to fill the provider model field.</p>
+            </div>
+            <label>
+              System Prompt
+              <textarea id="systemPrompt" rows="4" placeholder="Set a system instruction for this model..."></textarea>
+            </label>
+            <label>
+              Max New Tokens
+              <input type="text" id="maxNewTokens" inputmode="numeric" pattern="[0-9,]*" value="4,096" />
+            </label>
+            <label>
+              Temperature
+              <input type="number" id="temperature" min="0" step="0.1" value="0.7" />
+            </label>
+            <label>
+              Top P
+              <input type="number" id="topP" min="0" max="1" step="0.05" value="0.9" />
+            </label>
+            <label>
+              Generation Preset
+              <select id="modelPreset">
+                <option value="focused">Focused</option>
+                <option value="balanced" selected>Balanced</option>
+                <option value="creative">Creative</option>
+                <option value="deterministic">Deterministic</option>
+                <option value="custom">Custom</option>
+              </select>
+            </label>
+
+            <div class="rank-access" id="modelLimitAccess">
+              <span class="rank-label">Per-Model Daily Limits</span>
+              <label class="rank-option">Free<input type="text" id="modelLimitFree" inputmode="numeric" pattern="[0-9,]*" placeholder="Unlimited" /></label>
+              <label class="rank-option">Plus<input type="text" id="modelLimitPlus" inputmode="numeric" pattern="[0-9,]*" placeholder="Unlimited" /></label>
+              <label class="rank-option">Pro<input type="text" id="modelLimitPro" inputmode="numeric" pattern="[0-9,]*" placeholder="Unlimited" /></label>
+            </div>
+
+            <label class="toggle-row">
+              <input type="checkbox" id="modelAlwaysAvailable" />
+              Always accessible fallback
+            </label>
+
+            <div class="rank-access" id="modelRankAccess">
+              <span class="rank-label">Allowed Ranks</span>
+              <label class="rank-option"><input type="checkbox" value="Free" checked />Free</label>
+              <label class="rank-option"><input type="checkbox" value="Plus" checked />Plus</label>
+              <label class="rank-option"><input type="checkbox" value="Pro" checked />Pro</label>
+            </div>
+
+            <div class="form-actions">
+              <button type="submit" class="primary" id="saveModelBtn">Save Model</button>
+              <button type="button" class="ghost tiny" id="resetModelForm">Reset</button>
+            </div>
+          </form>
+          <div class="model-actions">
+            <button id="clearModelCache" class="ghost tiny" type="button">Clear model cache</button>
+            <p class="hint" id="modelHint"></p>
+          </div>
+        </section>
+
+        <section class="panel section controls">
+          <div class="panel-header compact">
+            <h3>Search + Feedback</h3>
+            <span class="tag">Controls</span>
+          </div>
+
+          <form id="searchForm" class="form">
+            <label>
+              UI Name
+              <input type="text" id="uiName" placeholder="LLM WebUI" maxlength="80" />
+            </label>
+            <label class="toggle-row">
+              <input type="checkbox" id="searchEnabled" />
+              Enable DuckDuckGo search
+            </label>
+            <label>
+              Demo Model
+              <select id="demoModelId"></select>
+            </label>
+            <label>
+              Default Signed-in Model
+              <select id="defaultModelId"></select>
+            </label>
+            <label class="toggle-row">
+              <input type="checkbox" id="pythonInterpreterEnabled" />
+              Enable Python Interpreter (site-wide)
+            </label>
+            <label>
+              Interpreter Timeout (seconds)
+              <input type="number" id="pythonInterpreterTimeoutSec" min="1" max="30" value="6" />
+            </label>
+            <label>
+              Max Interpreter Output (chars)
+              <input
+                type="text"
+                id="pythonInterpreterMaxOutputChars"
+                inputmode="numeric"
+                pattern="[0-9,]*"
+                value="12,000"
+              />
+            </label>
+            <label>
+              Search Results Limit
+              <input type="number" id="searchMaxResults" min="1" max="10" value="5" />
+            </label>
+            <div class="rank-access" id="searchRankAccess">
+              <span class="rank-label">Search Allowed Ranks</span>
+              <label class="rank-option"><input type="checkbox" value="Free" />Free</label>
+              <label class="rank-option"><input type="checkbox" value="Plus" checked />Plus</label>
+              <label class="rank-option"><input type="checkbox" value="Pro" checked />Pro</label>
+            </div>
+            <button type="submit" class="ghost">Save Search Settings</button>
+          </form>
+
+          <div class="panel-header compact">
+            <h3>Security Guardrails</h3>
+            <span class="tag">Runtime</span>
+          </div>
+          <form id="securityForm" class="form">
+            <label class="toggle-row">
+              <input type="checkbox" id="securityGuardEnabled" />
+              Prevent revealing system prompts / internal details
+            </label>
+            <label>
+              Guardrail Policy Text (optional override)
+              <textarea
+                id="securityGuardPrompt"
+                rows="5"
+                placeholder="Leave blank to use default policy."
+              ></textarea>
+            </label>
+            <button type="submit" class="ghost">Save Guardrails</button>
+          </form>
+
+          <div class="panel-header compact">
+            <h3>API Keys</h3>
+            <span class="tag">Provider Defaults</span>
+          </div>
+          <form id="apiKeysForm" class="form">
+            <label>
+              OpenAI / vLLM Keys (one per line, optional for vLLM)
+              <textarea id="providerKeyOpenAI" rows="3" placeholder="sk-...\nsk-..."></textarea>
+            </label>
+            <label>
+              Anthropic Keys (one per line)
+              <textarea id="providerKeyAnthropic" rows="3" placeholder="sk-ant-...\nsk-ant-..."></textarea>
+            </label>
+            <label>
+              Google Keys (one per line)
+              <textarea id="providerKeyGoogle" rows="3" placeholder="AIza...\nAIza..."></textarea>
+            </label>
+            <p class="hint">Model-level API key fields override these defaults when provided.</p>
+            <button type="submit" class="ghost">Save API Keys</button>
+          </form>
+
+          <div class="panel-header compact">
+            <h3>Repo File Editor</h3>
+            <span class="tag">Allowlisted</span>
+          </div>
+          <div class="form">
+            <label>
+              Editable File
+              <select id="editableFileSelect"></select>
+            </label>
+            <label>
+              File Content
+              <textarea id="editableFileContent" rows="14" spellcheck="false"></textarea>
+            </label>
+            <div class="form-actions">
+              <button id="reloadEditableFile" type="button" class="ghost tiny">Reload File</button>
+              <button id="saveEditableFile" type="button" class="ghost">Save File</button>
+            </div>
+            <p id="editableFileStatus" class="hint"></p>
+          </div>
+
+          <div class="panel-header compact">
+            <h3>Raw Settings JSON</h3>
+            <span class="tag">Advanced</span>
+          </div>
+          <div class="form">
+            <label>
+              Full settings object
+              <textarea id="rawSettingsJson" rows="12" spellcheck="false"></textarea>
+            </label>
+            <div class="form-actions">
+              <button id="reloadRawSettings" type="button" class="ghost tiny">Reload JSON</button>
+              <button id="saveRawSettings" type="button" class="ghost">Save JSON</button>
+            </div>
+            <p id="rawSettingsStatus" class="hint"></p>
+          </div>
+
+          <form id="rankLimitsForm" class="form">
+            <label>
+              Free Daily Messages
+              <input type="text" id="limitFree" inputmode="numeric" pattern="[0-9,]*" placeholder="Unlimited" />
+            </label>
+            <label>
+              Free Daily Tokens
+              <input type="text" id="limitFreeTokens" inputmode="numeric" pattern="[0-9,]*" placeholder="Unlimited" />
+            </label>
+            <label>
+              Plus Daily Messages
+              <input type="text" id="limitPlus" inputmode="numeric" pattern="[0-9,]*" placeholder="Unlimited" />
+            </label>
+            <label>
+              Plus Daily Tokens
+              <input type="text" id="limitPlusTokens" inputmode="numeric" pattern="[0-9,]*" placeholder="Unlimited" />
+            </label>
+            <label>
+              Pro Daily Messages
+              <input type="text" id="limitPro" inputmode="numeric" pattern="[0-9,]*" placeholder="Unlimited" />
+            </label>
+            <label>
+              Pro Daily Tokens
+              <input type="text" id="limitProTokens" inputmode="numeric" pattern="[0-9,]*" placeholder="Unlimited" />
+            </label>
+            <label>
+              Demotion Model (Free)
+              <select id="demotionModelFree"></select>
+            </label>
+            <label>
+              Demotion Model (Plus)
+              <select id="demotionModelPlus"></select>
+            </label>
+            <label>
+              Demotion Model (Pro)
+              <select id="demotionModelPro"></select>
+            </label>
+            <label>
+              Demotion Model (Demo)
+              <select id="demotionModelDemo"></select>
+            </label>
+            <button type="submit" class="ghost">Save Rank Limits</button>
+          </form>
+
+          <div class="panel-header compact feedback-header">
+            <h3>Feedback</h3>
+            <button id="refreshFeedback" class="ghost tiny">Refresh</button>
+          </div>
+          <ul id="feedbackList" class="feedback-list"></ul>
+        </section>
+
+        <section class="panel section servers">
+          <div class="panel-header compact">
+            <h3>Ollama Servers</h3>
+            <button id="refreshServers" class="ghost tiny">Refresh</button>
+          </div>
+          <ul id="ollamaServerList" class="server-list"></ul>
+          <form id="ollamaServerForm" class="form server-form">
+            <label>
+              Name
+              <input type="text" id="serverName" required />
+            </label>
+            <label>
+              URL
+              <input type="text" id="serverUrl" placeholder="http://localhost:11434" required />
+            </label>
+            <label>
+              Description
+              <input type="text" id="serverDescription" placeholder="Optional note" />
+            </label>
+            <label class="toggle-row">
+              <input type="checkbox" id="serverDefault" />
+              Set as default server
+            </label>
+            <div class="form-actions">
+              <button type="submit" class="primary" id="saveServerBtn">Save server</button>
+              <button type="button" class="ghost tiny" id="resetServerForm">Reset</button>
+            </div>
+          </form>
+        </section>
+
+        <section class="panel section remote-models">
+          <div class="panel-header compact">
+            <div>
+              <h3>Model Management</h3>
+              <p class="hint">Inspect server inventory and download/remove models in place.</p>
+            </div>
+            <div class="header-controls">
+              <select id="remoteServerSelect" class="server-select"></select>
+              <button id="refreshRemoteModels" class="ghost tiny">Refresh</button>
+            </div>
+          </div>
+
+          <div class="model-management">
+            <div class="model-column">
+              <div class="column-header">
+                <strong>Installed Models</strong>
+              </div>
+              <ul id="installedModelList" class="remote-list"></ul>
+            </div>
+
+            <div class="model-column">
+              <div class="column-header">
+                <strong>Available to Download</strong>
+              </div>
+              <input id="remoteSearch" type="search" placeholder="Search available models..." />
+              <ul id="availableModelList" class="remote-list"></ul>
+            </div>
+          </div>
+        </section>
+      </div>
+    </section>
+  </main>
+
+  <div id="userChatsModal" class="modal hidden">
+    <div class="modal-card">
+      <div class="panel-header compact">
+        <h3 id="userChatsTitle">User Chats</h3>
+        <button id="closeUserChats" class="ghost tiny" type="button">Close</button>
+      </div>
+      <div id="userChatsContent" class="user-chats-content"></div>
+    </div>
+  </div>
+
+  <script src="admin.js"></script>
+</body>
+</html>
